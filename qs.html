@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="text"],
+        input[type="email"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        #lockMessage {
+            display: none;
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        const correctAnswers = {
+            question1: "b",
+            question2: "a",
+            question3: "c"
+        };
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                // Display a message and lock the form
+                document.getElementById("test").style.display = 'none'; // Hide the form
+                document.getElementById("lockMessage").style.display = 'block'; // Show lock message
+                alert("You have navigated away from the test. The test has been locked.");
+            }
+        });
+
+        function handleSubmit(event) {
+    event.preventDefault(); // Prevent the default form submission
+    let score = 0;
+    let results = {}; // Object to store the user's answers
+
+    // Check answers
+    for (let question in correctAnswers) {
+        const selectedOption = document.querySelector(`input[name="${question}"]:checked`);
+        if (selectedOption) {
+            results[question] = selectedOption.value; // Store selected answer
+            if (selectedOption.value === correctAnswers[question]) {
+                score++;
+            }
+        }
+    }
+
+    // Prepare data to send to Google Sheets
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+
+    console.log("Submitting data:", { name, email, score, answers: results }); // Debugging log
+
+    fetch('https://script.google.com/macros/s/AKfycbxPGehb7jsMOD9WFvwSiM-gd4i-H2S66Ued7CEayMDhcur8fkW_dNi5yLNnRxSZo0Qu/exec', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: name,
+            email: email,
+            score: score,
+            answers: results
+        }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.text();
+    })
+    .then(data => {
+        alert(`You scored ${score} out of ${Object.keys(correctAnswers).length}`);
+        console.log("Server response:", data); // Debugging log
+        document.getElementById("test").reset(); // Reset the form
+    })
+    .catch(error => {
+        console.error("Error sending data:", error); // Log errors to console
+        alert("There was an error submitting your test. Please try again.");
+    });
+}
+
+    </script>
+</head>
+<body>
+    <form id="test" onsubmit="handleSubmit(event)">
+        <h1>Online Test</h1>
+        <label for="name">Name:</label>
+        <input type="text" id="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required>
+
+        <div class="question">
+            <label>Question 1: What is 2 + 2?</label>
+            <input type="radio" name="question1" value="a"> 3<br>
+            <input type="radio" name="question1" value="b"> 4<br>
+            <input type="radio" name="question1" value="c"> 5<br>
+        </div>
+
+        <div class="question">
+            <label>Question 2: What is the capital of France?</label>
+            <input type="radio" name="question2" value="a"> Paris<br>
+            <input type="radio" name="question2" value="b"> London<br>
+            <input type="radio" name="question2" value="c"> Berlin<br>
+        </div>
+
+        <div class="question">
+            <label>Question 3: Which planet is known as the Red Planet?</label>
+            <input type="radio" name="question3" value="a"> Earth<br>
+            <input type="radio" name="question3" value="b"> Venus<br>
+            <input type="radio" name="question3" value="c"> Mars<br>
+        </div>
+
+        <input type="submit" value="Submit Test">
+    </form>
+    <div id="lockMessage">
+        <h2>The test has been locked due to inactivity.</h2>
+    </div>
+</body>
+</html>
+
